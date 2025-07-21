@@ -2663,20 +2663,32 @@
       );
       
       // Update each dataset
-      window.dashboardChart.data.datasets.forEach(dataset => {
-        const param = dataset.parameter;
-        const paramMeasurements = recentMeasurements
-          .filter(m => m.parameter === param)
-          .map(m => ({
-            x: new Date(m.timestamp),
-            y: m.value
-          }));
-        
-        dataset.data = paramMeasurements;
-      });
-      
-      window.dashboardChart.update();
-    }
+      function updateDashboardChart() {
+  if (!window.dashboardChart) return;
+  
+  // Get last 24 hours of data
+  const cutoff = new Date();
+  cutoff.setHours(cutoff.getHours() - 24);
+  
+  const recentMeasurements = state.measurements.filter(m => 
+    new Date(m.timestamp) > cutoff
+  );
+  
+  // Update each dataset
+  window.dashboardChart.data.datasets.forEach(dataset => {
+    const param = dataset.parameter;
+    const paramMeasurements = recentMeasurements
+      .filter(m => m.parameter === param)
+      .map(m => ({
+        x: new Date(m.timestamp),
+        y: m.value
+      }));
+    
+    dataset.data = paramMeasurements;
+  });
+  
+  window.dashboardChart.update();
+}
     
     function initMeasurementChart() {
       const ctx = document.getElementById('measurement-chart').getContext('2d');
@@ -2762,57 +2774,58 @@
     }
     
     function updateMeasurementChart() {
-      if (!window.measurementChart) return;
-      
-      const selectedParam = document.getElementById('measurement-parameter').value;
-      const timeframe = document.getElementById('chart-timeframe').value;
-      
-      // Calculate cutoff based on timeframe
-      let cutoff = new Date(0); // Default to all data
-      const now = new Date();
-      
-      if (timeframe === '1h') {
-        cutoff = new Date(now.getTime() - 3600000);
-      } else if (timeframe === '6h') {
-        cutoff = new Date(now.getTime() - 6 * 3600000);
-      } else if (timeframe === '24h') {
-        cutoff = new Date(now.getTime() - 24 * 3600000);
-      } else if (timeframe === '7d') {
-        cutoff = new Date(now.getTime() - 7 * 24 * 3600000);
-      } else if (timeframe === '30d') {
-        cutoff = new Date(now.getTime() - 30 * 24 * 3600000);
-      }
-      
-      // Filter measurements
-      let filtered = state.measurements.filter(m => new Date(m.timestamp) > cutoff);
-      
-      if (selectedParam !== 'all') {
-        filtered = filtered.filter(m => m.parameter === selectedParam);
-      }
-      
-      // Group by parameter for charting
-      const datasets = [];
-      const params = [...new Set(filtered.map(m => m.parameter))];
-      
-      params.forEach(param => {
-        const paramMeasurements = filtered.filter(m => m.parameter === param);
-        datasets.push({
-          label: paramMetadata[param].name,
-          data: paramMeasurements.map(m => ({
-            x: new Date(m.timestamp),
-            y: m.value
-          })),
-          borderColor: paramMetadata[param].color,
-          backgroundColor: 'rgba(0,0,0,0.1)',
-          tension: 0.1,
-          parameter: param
-        });
-      });
-      
-      // Update chart
-      window.measurementChart.data.datasets = datasets;
-      window.measurementChart.update();
-    }
+    function updateMeasurementChart() {
+  if (!window.measurementChart) return;
+  
+  const selectedParam = document.getElementById('measurement-parameter').value;
+  const timeframe = document.getElementById('chart-timeframe').value;
+  
+  // Calculate cutoff based on timeframe
+  let cutoff = new Date(0); // Default to all data
+  const now = new Date();
+  
+  if (timeframe === '1h') {
+    cutoff = new Date(now.getTime() - 3600000);
+  } else if (timeframe === '6h') {
+    cutoff = new Date(now.getTime() - 6 * 3600000);
+  } else if (timeframe === '24h') {
+    cutoff = new Date(now.getTime() - 24 * 3600000);
+  } else if (timeframe === '7d') {
+    cutoff = new Date(now.getTime() - 7 * 24 * 3600000);
+  } else if (timeframe === '30d') {
+    cutoff = new Date(now.getTime() - 30 * 24 * 3600000);
+  }
+  
+  // Filter measurements
+  let filtered = state.measurements.filter(m => new Date(m.timestamp) > cutoff);
+  
+  if (selectedParam !== 'all') {
+    filtered = filtered.filter(m => m.parameter === selectedParam);
+  }
+  
+  // Group by parameter for charting
+  const datasets = [];
+  const params = [...new Set(filtered.map(m => m.parameter))];
+  
+  params.forEach(param => {
+    const paramMeasurements = filtered.filter(m => m.parameter === param);
+    datasets.push({
+      label: parameterMetadata[param].name,  // Changed from paramMetadata to parameterMetadata
+      data: paramMeasurements.map(m => ({
+        x: new Date(m.timestamp),
+        y: m.value
+      })),
+      borderColor: parameterMetadata[param].color,  // Changed from paramMetadata to parameterMetadata
+      backgroundColor: 'rgba(0,0,0,0.1)',
+      tension: 0.1,
+      parameter: param
+    });
+  });
+  
+  // Update chart
+  window.measurementChart.data.datasets = datasets;
+  window.measurementChart.update();
+}
     
     function createDatasetConfig(param) {
       const meta = parameterMetadata[param];
