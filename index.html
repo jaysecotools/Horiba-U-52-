@@ -2654,25 +2654,32 @@
 function updateDashboardChart() {
   if (!window.dashboardChart) return;
   
-  // Get last 24 hours of data
-  const cutoff = new Date();
-  cutoff.setHours(cutoff.getHours() - 24);
+  // Get last 10 measurements for each parameter (or adjust as needed)
+  const recentMeasurements = [...state.measurements]
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+    .slice(0, 40); // Show last 10 measurements per parameter (4 parameters)
   
-  const recentMeasurements = state.measurements.filter(m => 
-    new Date(m.timestamp) > cutoff
-  );
+  // Group measurements by parameter
+  const measurementsByParam = {
+    pH: [],
+    DO: [],
+    conductivity: [],
+    temperature: []
+  };
+  
+  recentMeasurements.forEach(m => {
+    if (measurementsByParam[m.parameter]) {
+      measurementsByParam[m.parameter].push(m);
+    }
+  });
   
   // Update each dataset
   window.dashboardChart.data.datasets.forEach(dataset => {
     const param = dataset.parameter;
-    const paramMeasurements = recentMeasurements
-      .filter(m => m.parameter === param)
-      .map(m => ({
-        x: new Date(m.timestamp),
-        y: m.value
-      }));
-    
-    dataset.data = paramMeasurements;
+    dataset.data = measurementsByParam[param].map(m => ({
+      x: new Date(m.timestamp),
+      y: m.value
+    }));
   });
   
   window.dashboardChart.update();
