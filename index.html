@@ -11,6 +11,7 @@
       --secondary: #e6f2ff;
       --danger: #dc3545;
       --success: #28a745;
+      --warning: #ffc107;
     }
     
     * {
@@ -22,6 +23,7 @@
       margin: 0;
       padding: 20px;
       background-color: #f8f9fa;
+      line-height: 1.6;
     }
     
     .container {
@@ -33,10 +35,15 @@
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
     
+    h1, h2, h3 {
+      color: var(--primary);
+    }
+    
     .tabs {
       display: flex;
       margin-bottom: 20px;
       border-bottom: 1px solid #ddd;
+      flex-wrap: wrap;
     }
     
     .tab-btn {
@@ -72,7 +79,7 @@
       font-weight: 600;
     }
     
-    select, input, button {
+    select, input, textarea, button {
       width: 100%;
       padding: 10px;
       border: 1px solid #ddd;
@@ -86,6 +93,11 @@
       cursor: pointer;
       font-weight: 600;
       margin-top: 10px;
+      transition: background-color 0.2s;
+    }
+    
+    button:hover {
+      background-color: #004d99;
     }
     
     button:disabled {
@@ -127,6 +139,48 @@
       margin-top: 20px;
     }
     
+    .video-container {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      margin: 20px 0;
+      border-radius: 8px;
+    }
+    
+    .video-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .instruction-card {
+      background: #f8f9fa;
+      border-left: 4px solid var(--primary);
+      padding: 15px;
+      margin: 15px 0;
+    }
+    
+    .warning-card {
+      background: #fff3cd;
+      border-left: 4px solid var(--warning);
+      padding: 15px;
+      margin: 15px 0;
+    }
+    
+    .step-number {
+      display: inline-block;
+      background: var(--primary);
+      color: white;
+      width: 25px;
+      height: 25px;
+      text-align: center;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+    
     @media (max-width: 768px) {
       .tabs {
         flex-direction: column;
@@ -141,43 +195,63 @@
 </head>
 <body>
   <div class="container">
-    <h1>Horiba U-52 Field App</h1>
+    <h1>Horiba U-52 Water Quality Meter</h1>
+    <p>Complete field application for calibration, measurement, and data logging</p>
     
     <div class="tabs">
-      <button class="tab-btn active" onclick="openTab('dashboard')">Dashboard</button>
+      <button class="tab-btn active" onclick="openTab('instructions')">Instructions</button>
       <button class="tab-btn" onclick="openTab('calibration')">Calibration</button>
       <button class="tab-btn" onclick="openTab('measurement')">Measurement</button>
       <button class="tab-btn" onclick="openTab('data')">Data Log</button>
+      <button class="tab-btn" onclick="openTab('videos')">Video Guides</button>
     </div>
     
-    <!-- Dashboard Tab -->
-    <div id="dashboard" class="tab-content active">
-      <h2>Instrument Status</h2>
-      <div class="status-cards">
-        <div class="reading-card">
-          <h3>pH Probe</h3>
-          <p>Last Calibrated: <span id="ph-calibration-date">Not calibrated</span></p>
-          <p>Status: <span id="ph-status">Unknown</span></p>
-        </div>
-        <div class="reading-card">
-          <h3>DO Probe</h3>
-          <p>Last Calibrated: <span id="do-calibration-date">Not calibrated</span></p>
-          <p>Status: <span id="do-status">Unknown</span></p>
-        </div>
+    <!-- Instructions Tab -->
+    <div id="instructions" class="tab-content active">
+      <h2>Getting Started</h2>
+      
+      <div class="instruction-card">
+        <h3><span class="step-number">1</span> Initial Setup</h3>
+        <ol>
+          <li>Install batteries or connect power adapter</li>
+          <li>Attach the appropriate probes (pH, DO, conductivity)</li>
+          <li>Ensure all O-rings are properly seated</li>
+          <li>Power on the device</li>
+        </ol>
       </div>
       
-      <h2>Quick Actions</h2>
-      <button onclick="openTab('calibration')">Start Calibration</button>
-      <button onclick="openTab('measurement')">New Measurement</button>
+      <div class="instruction-card">
+        <h3><span class="step-number">2</span> Calibration</h3>
+        <p>Always calibrate:</p>
+        <ul>
+          <li>Before first use each day</li>
+          <li>After changing probes</li>
+          <li>When measurements seem inaccurate</li>
+        </ul>
+        <p>Use fresh calibration solutions and proper buffers</p>
+      </div>
+      
+      <div class="warning-card">
+        <h3>⚠️ Important Safety Notes</h3>
+        <ul>
+          <li>Never touch probe membranes with fingers</li>
+          <li>Always rinse probes with DI water between measurements</li>
+          <li>Store probes properly when not in use</li>
+          <li>Handle calibration chemicals with care</li>
+        </ul>
+      </div>
+      
+      <button onclick="openTab('calibration')">Start Calibration Now</button>
     </div>
     
     <!-- Calibration Tab -->
     <div id="calibration" class="tab-content">
-      <h2>Calibration Wizard</h2>
+      <h2>Probe Calibration</h2>
       
       <div class="form-group">
-        <label for="calibration-parameter">Parameter</label>
+        <label for="calibration-parameter">Select Parameter</label>
         <select id="calibration-parameter" onchange="updateCalibrationSteps()">
+          <option value="">-- Select Parameter --</option>
           <option value="pH">pH</option>
           <option value="DO">Dissolved Oxygen</option>
           <option value="conductivity">Conductivity</option>
@@ -186,7 +260,11 @@
       </div>
       
       <div id="calibration-steps">
-        <!-- Dynamic content will go here -->
+        <p>Please select a parameter to begin calibration</p>
+      </div>
+      
+      <div class="video-container" id="calibration-video" style="display:none;">
+        <!-- Video will be inserted dynamically -->
       </div>
       
       <div class="timer-display" id="timer-display" style="display: none;">
@@ -202,7 +280,19 @@
     
     <!-- Measurement Tab -->
     <div id="measurement" class="tab-content">
-      <h2>Take Measurement</h2>
+      <h2>Take Measurements</h2>
+      
+      <div class="instruction-card">
+        <h3>Proper Measurement Technique</h3>
+        <ol>
+          <li>Rinse probe with DI water</li>
+          <li>Gently shake off excess water</li>
+          <li>Immerse probe in sample</li>
+          <li>Stir gently (for pH/DO measurements)</li>
+          <li>Wait for reading to stabilize</li>
+          <li>Record measurement</li>
+        </ol>
+      </div>
       
       <div class="form-group">
         <label for="measurement-parameter">Parameter</label>
@@ -221,8 +311,8 @@
       </div>
       
       <div class="form-group">
-        <label for="measurement-notes">Notes</label>
-        <input type="text" id="measurement-notes" placeholder="Optional notes">
+        <label for="measurement-notes">Notes (Location, Conditions, etc.)</label>
+        <textarea id="measurement-notes" rows="3" placeholder="Sample details..."></textarea>
       </div>
       
       <button onclick="logMeasurement()">Record Measurement</button>
@@ -248,16 +338,42 @@
       </div>
       
       <div id="measurement-log">
-        <!-- Measurements will appear here -->
+        <p>No measurements recorded yet</p>
       </div>
       
       <button onclick="exportData()">Export Data (CSV)</button>
+      <button onclick="printMeasurements()" style="background-color: var(--warning); color: black;">Print Report</button>
+    </div>
+    
+    <!-- Video Guides Tab -->
+    <div id="videos" class="tab-content">
+      <h2>Video Tutorials</h2>
+      
+      <div class="video-container">
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/9HV7SpkgonM" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+      <p><strong>Horiba U-52 Overview</strong> - Basic operation and maintenance</p>
+      
+      <div class="video-container">
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/5w6s9K97G9g" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+      <p><strong>Calibration Guide</strong> - Step-by-step probe calibration</p>
+      
+      <div class="instruction-card">
+        <h3>Need More Help?</h3>
+        <p>Consult the <a href="https://www.horiba.com" target="_blank">Horiba Official Website</a> for:</p>
+        <ul>
+          <li>Technical specifications</li>
+          <li>Manual downloads</li>
+          <li>Support contacts</li>
+        </ul>
+      </div>
     </div>
   </div>
 
   <script>
     // Global variables
-    let measurements = [];
+    let measurements = JSON.parse(localStorage.getItem('horibaMeasurements')) || [];
     let currentCalibration = {
       parameter: null,
       step: 0,
@@ -265,34 +381,50 @@
       maxTime: 0
     };
     
-    // Calibration workflows
+    // Calibration workflows with video references
     const calibrationWorkflows = {
-      pH: [
-        { instruction: "Rinse probe with deionized water", duration: 30 },
-        { instruction: "Immerse probe in pH 7 buffer solution", duration: 120 },
-        { instruction: "Wait for reading to stabilize", duration: 60 },
-        { instruction: "Confirm calibration (enter value 7.00)", duration: 0 }
-      ],
-      DO: [
-        { instruction: "Prepare zero oxygen solution (sodium sulfite)", duration: 60 },
-        { instruction: "Immerse probe and wait for stabilization", duration: 180 },
-        { instruction: "Confirm zero reading", duration: 0 },
-        { instruction: "Rinse probe and expose to air", duration: 120 },
-        { instruction: "Confirm air saturation (~8.2 mg/L at 20°C)", duration: 0 }
-      ],
-      conductivity: [
-        { instruction: "Rinse probe with DI water", duration: 30 },
-        { instruction: "Immerse in standard solution (e.g., 1413 µS/cm)", duration: 120 },
-        { instruction: "Wait for reading to stabilize", duration: 60 },
-        { instruction: "Confirm calibration value", duration: 0 }
-      ],
-      temperature: [
-        { instruction: "Prepare ice bath (0°C) and boiling water (100°C)", duration: 60 },
-        { instruction: "Immerse probe in ice bath", duration: 120 },
-        { instruction: "Confirm 0°C reading", duration: 0 },
-        { instruction: "Transfer to boiling water (caution!)", duration: 120 },
-        { instruction: "Confirm 100°C reading", duration: 0 }
-      ]
+      pH: {
+        steps: [
+          { instruction: "Rinse probe with deionized water", duration: 30 },
+          { instruction: "Immerse probe in pH 7 buffer solution", duration: 120 },
+          { instruction: "Wait for reading to stabilize", duration: 60 },
+          { instruction: "Confirm calibration (enter value 7.00)", duration: 0 }
+        ],
+        videoId: "5w6s9K97G9g",
+        videoStart: 120
+      },
+      DO: {
+        steps: [
+          { instruction: "Prepare zero oxygen solution (sodium sulfite)", duration: 60 },
+          { instruction: "Immerse probe and wait for stabilization", duration: 180 },
+          { instruction: "Confirm zero reading", duration: 0 },
+          { instruction: "Rinse probe and expose to air", duration: 120 },
+          { instruction: "Confirm air saturation (~8.2 mg/L at 20°C)", duration: 0 }
+        ],
+        videoId: "5w6s9K97G9g",
+        videoStart: 240
+      },
+      conductivity: {
+        steps: [
+          { instruction: "Rinse probe with DI water", duration: 30 },
+          { instruction: "Immerse in standard solution (e.g., 1413 µS/cm)", duration: 120 },
+          { instruction: "Wait for reading to stabilize", duration: 60 },
+          { instruction: "Confirm calibration value", duration: 0 }
+        ],
+        videoId: "9HV7SpkgonM",
+        videoStart: 180
+      },
+      temperature: {
+        steps: [
+          { instruction: "Prepare ice bath (0°C) and boiling water (100°C)", duration: 60 },
+          { instruction: "Immerse probe in ice bath", duration: 120 },
+          { instruction: "Confirm 0°C reading", duration: 0 },
+          { instruction: "Transfer to boiling water (caution!)", duration: 120 },
+          { instruction: "Confirm 100°C reading", duration: 0 }
+        ],
+        videoId: "9HV7SpkgonM",
+        videoStart: 300
+      }
     };
     
     // Tab navigation
@@ -318,13 +450,26 @@
     // Calibration functions
     function updateCalibrationSteps() {
       const parameter = document.getElementById('calibration-parameter').value;
+      if (!parameter) return;
+      
       currentCalibration.parameter = parameter;
       currentCalibration.step = 0;
       
+      const workflow = calibrationWorkflows[parameter];
       const stepsContainer = document.getElementById('calibration-steps');
+      
       stepsContainer.innerHTML = `
         <h3>${parameter} Calibration</h3>
-        <p>${calibrationWorkflows[parameter][0].instruction}</p>
+        <p>${workflow.steps[0].instruction}</p>
+        <p class="warning-card"><strong>Tip:</strong> Watch the <a href="#videos" onclick="openTab('videos')">video guide</a> for visual instructions</p>
+      `;
+      
+      // Show relevant video
+      const videoContainer = document.getElementById('calibration-video');
+      videoContainer.style.display = 'block';
+      videoContainer.innerHTML = `
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/${workflow.videoId}?start=${workflow.videoStart}" 
+        frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
       `;
       
       document.getElementById('next-step-btn').disabled = false;
@@ -339,13 +484,13 @@
       const workflow = calibrationWorkflows[parameter];
       
       // If we're at the last step, complete calibration
-      if (step >= workflow.length - 1) {
+      if (step >= workflow.steps.length - 1) {
         completeCalibration();
         return;
       }
       
       // Start timer for current step
-      const duration = workflow[step].duration;
+      const duration = workflow.steps[step].duration;
       if (duration > 0) {
         startTimer(duration);
       }
@@ -353,11 +498,11 @@
       // Update UI for next step
       currentCalibration.step++;
       document.getElementById('calibration-steps').innerHTML = `
-        <h3>Step ${currentCalibration.step + 1} of ${workflow.length}</h3>
-        <p>${workflow[currentCalibration.step].instruction}</p>
+        <h3>Step ${currentCalibration.step + 1} of ${workflow.steps.length}</h3>
+        <p>${workflow.steps[currentCalibration.step].instruction}</p>
       `;
       
-      if (currentCalibration.step >= workflow.length - 1) {
+      if (currentCalibration.step >= workflow.steps.length - 1) {
         document.getElementById('next-step-btn').textContent = 'Complete Calibration';
       } else {
         document.getElementById('next-step-btn').textContent = 'Next Step';
@@ -406,10 +551,12 @@
       document.getElementById('calibration-steps').innerHTML = `
         <h3>${parameter} Calibration Complete!</h3>
         <p>Calibration performed at ${now.toLocaleTimeString()}</p>
+        <p>Proceed to <a href="#measurement" onclick="openTab('measurement')">measurement</a> or <a href="#videos" onclick="openTab('videos')">watch more videos</a></p>
       `;
       document.getElementById('next-step-btn').disabled = true;
       document.getElementById('timer-display').style.display = 'none';
       document.getElementById('progress-container').style.display = 'none';
+      document.getElementById('calibration-video').style.display = 'none';
       
       alert(`${parameter} calibration completed successfully!`);
     }
@@ -435,6 +582,7 @@
       };
       
       measurements.push(measurement);
+      localStorage.setItem('horibaMeasurements', JSON.stringify(measurements));
       
       // Clear form
       document.getElementById('measurement-value').value = '';
@@ -549,6 +697,7 @@
     function deleteMeasurement(id) {
       if (confirm('Are you sure you want to delete this measurement?')) {
         measurements = measurements.filter(m => m.id !== id);
+        localStorage.setItem('horibaMeasurements', JSON.stringify(measurements));
         renderMeasurementLog();
         updateMeasurementChart();
       }
@@ -591,10 +740,73 @@
       document.body.removeChild(a);
     }
     
+    function printMeasurements() {
+      const printWindow = window.open('', '_blank');
+      const filter = document.getElementById('data-filter').value;
+      const filtered = filter === 'all' 
+        ? measurements 
+        : measurements.filter(m => m.parameter === filter);
+      
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Horiba U-52 Measurement Report</title>
+            <style>
+              body { font-family: Arial; margin: 20px; }
+              h1 { color: #0066cc; }
+              table { width: 100%; border-collapse: collapse; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background-color: #f2f2f2; }
+            </style>
+          </head>
+          <body>
+            <h1>Horiba U-52 Measurement Report</h1>
+            <p>Generated: ${new Date().toLocaleString()}</p>
+            <p>Filter: ${filter === 'all' ? 'All Parameters' : filter}</p>
+            
+            <table>
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Parameter</th>
+                  <th>Value</th>
+                  <th>Unit</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filtered.map(m => `
+                  <tr>
+                    <td>${m.timestamp.toLocaleString()}</td>
+                    <td>${m.parameter}</td>
+                    <td>${m.value}</td>
+                    <td>${m.unit}</td>
+                    <td>${m.notes || ''}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      printWindow.print();
+    }
+    
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
-      updateCalibrationSteps();
       renderMeasurementLog();
+      
+      // Set up video tab to show both videos
+      document.getElementById('videos').innerHTML += `
+        <div class="video-container">
+          <iframe width="560" height="315" src="https://www.youtube.com/embed/9HV7SpkgonM" frameborder="0" allowfullscreen></iframe>
+        </div>
+        <div class="video-container">
+          <iframe width="560" height="315" src="https://www.youtube.com/embed/5w6s9K97G9g" frameborder="0" allowfullscreen></iframe>
+        </div>
+      `;
     });
   </script>
 </body>
