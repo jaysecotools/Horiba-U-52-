@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horiba U-52 Field App</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary: #0066cc;
+      --secondary: #e6f2ff;
+      --danger: #dc3545;
+      --success: #28a745;
+    }
+    
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .tab-btn {
+      padding: 10px 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      color: #555;
+    }
+    
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom: 3px solid var(--primary);
+    }
+    
+    .tab-content {
+      display: none;
+      padding: 20px 0;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    
+    select, input, button {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+    
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .timer-display {
+      font-size: 1.5rem;
+      text-align: center;
+      margin: 20px 0;
+    }
+    
+    .progress-container {
+      height: 20px;
+      background-color: #eee;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      border-radius: 10px;
+      background-color: var(--primary);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    
+    .reading-card {
+      background: var(--secondary);
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    
+    .chart-container {
+      position: relative;
+      height: 300px;
+      margin-top: 20px;
+    }
+    
+    @media (max-width: 768px) {
+      .tabs {
+        flex-direction: column;
+      }
+      
+      .tab-btn {
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Horiba U-52 Field App</h1>
+    
+    <div class="tabs">
+      <button class="tab-btn active" onclick="openTab('dashboard')">Dashboard</button>
+      <button class="tab-btn" onclick="openTab('calibration')">Calibration</button>
+      <button class="tab-btn" onclick="openTab('measurement')">Measurement</button>
+      <button class="tab-btn" onclick="openTab('data')">Data Log</button>
+    </div>
+    
+    <!-- Dashboard Tab -->
+    <div id="dashboard" class="tab-content active">
+      <h2>Instrument Status</h2>
+      <div class="status-cards">
+        <div class="reading-card">
+          <h3>pH Probe</h3>
+          <p>Last Calibrated: <span id="ph-calibration-date">Not calibrated</span></p>
+          <p>Status: <span id="ph-status">Unknown</span></p>
+        </div>
+        <div class="reading-card">
+          <h3>DO Probe</h3>
+          <p>Last Calibrated: <span id="do-calibration-date">Not calibrated</span></p>
+          <p>Status: <span id="do-status">Unknown</span></p>
+        </div>
+      </div>
+      
+      <h2>Quick Actions</h2>
+      <button onclick="openTab('calibration')">Start Calibration</button>
+      <button onclick="openTab('measurement')">New Measurement</button>
+    </div>
+    
+    <!-- Calibration Tab -->
+    <div id="calibration" class="tab-content">
+      <h2>Calibration Wizard</h2>
+      
+      <div class="form-group">
+        <label for="calibration-parameter">Parameter</label>
+        <select id="calibration-parameter" onchange="updateCalibrationSteps()">
+          <option value="pH">pH</option>
+          <option value="DO">Dissolved Oxygen</option>
+          <option value="conductivity">Conductivity</option>
+          <option value="temperature">Temperature</option>
+        </select>
+      </div>
+      
+      <div id="calibration-steps">
+        <!-- Dynamic content will go here -->
+      </div>
+      
+      <div class="timer-display" id="timer-display" style="display: none;">
+        Time Remaining: <span id="time-remaining">0</span>s
+      </div>
+      
+      <div class="progress-container" id="progress-container" style="display: none;">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+      
+      <button id="next-step-btn" onclick="nextCalibrationStep()" disabled>Start Calibration</button>
+    </div>
+    
+    <!-- Measurement Tab -->
+    <div id="measurement" class="tab-content">
+      <h2>Take Measurement</h2>
+      
+      <div class="form-group">
+        <label for="measurement-parameter">Parameter</label>
+        <select id="measurement-parameter">
+          <option value="pH">pH</option>
+          <option value="DO">Dissolved Oxygen</option>
+          <option value="conductivity">Conductivity</option>
+          <option value="temperature">Temperature</option>
+          <option value="all">All Parameters</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="measurement-value">Value</label>
+        <input type="number" id="measurement-value" step="0.01" placeholder="Enter reading">
+      </div>
+      
+      <div class="form-group">
+        <label for="measurement-notes">Notes</label>
+        <input type="text" id="measurement-notes" placeholder="Optional notes">
+      </div>
+      
+      <button onclick="logMeasurement()">Record Measurement</button>
+      
+      <div class="chart-container">
+        <canvas id="measurement-chart"></canvas>
+      </div>
+    </div>
+    
+    <!-- Data Log Tab -->
+    <div id="data" class="tab-content">
+      <h2>Measurement Log</h2>
+      
+      <div class="form-group">
+        <label for="data-filter">Filter by Parameter</label>
+        <select id="data-filter" onchange="filterMeasurements()">
+          <option value="all">All Parameters</option>
+          <option value="pH">pH</option>
+          <option value="DO">Dissolved Oxygen</option>
+          <option value="conductivity">Conductivity</option>
+          <option value="temperature">Temperature</option>
+        </select>
+      </div>
+      
+      <div id="measurement-log">
+        <!-- Measurements will appear here -->
+      </div>
+      
+      <button onclick="exportData()">Export Data (CSV)</button>
+    </div>
+  </div>
+
+  <script>
+    // Global variables
+    let measurements = [];
+    let currentCalibration = {
+      parameter: null,
+      step: 0,
+      timer: null,
+      maxTime: 0
+    };
+    
+    // Calibration workflows
+    const calibrationWorkflows = {
+      pH: [
+        { instruction: "Rinse probe with deionized water", duration: 30 },
+        { instruction: "Immerse probe in pH 7 buffer solution", duration: 120 },
+        { instruction: "Wait for reading to stabilize", duration: 60 },
+        { instruction: "Confirm calibration (enter value 7.00)", duration: 0 }
+      ],
+      DO: [
+        { instruction: "Prepare zero oxygen solution (sodium sulfite)", duration: 60 },
+        { instruction: "Immerse probe and wait for stabilization", duration: 180 },
+        { instruction: "Confirm zero reading", duration: 0 },
+        { instruction: "Rinse probe and expose to air", duration: 120 },
+        { instruction: "Confirm air saturation (~8.2 mg/L at 20°C)", duration: 0 }
+      ],
+      conductivity: [
+        { instruction: "Rinse probe with DI water", duration: 30 },
+        { instruction: "Immerse in standard solution (e.g., 1413 µS/cm)", duration: 120 },
+        { instruction: "Wait for reading to stabilize", duration: 60 },
+        { instruction: "Confirm calibration value", duration: 0 }
+      ],
+      temperature: [
+        { instruction: "Prepare ice bath (0°C) and boiling water (100°C)", duration: 60 },
+        { instruction: "Immerse probe in ice bath", duration: 120 },
+        { instruction: "Confirm 0°C reading", duration: 0 },
+        { instruction: "Transfer to boiling water (caution!)", duration: 120 },
+        { instruction: "Confirm 100°C reading", duration: 0 }
+      ]
+    };
+    
+    // Tab navigation
+    function openTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      document.getElementById(tabId).classList.add('active');
+      document.querySelector(`.tab-btn[onclick="openTab('${tabId}')"]`).classList.add('active');
+      
+      // Special tab handling
+      if (tabId === 'data') {
+        renderMeasurementLog();
+      } else if (tabId === 'measurement') {
+        updateMeasurementChart();
+      }
+    }
+    
+    // Calibration functions
+    function updateCalibrationSteps() {
+      const parameter = document.getElementById('calibration-parameter').value;
+      currentCalibration.parameter = parameter;
+      currentCalibration.step = 0;
+      
+      const stepsContainer = document.getElementById('calibration-steps');
+      stepsContainer.innerHTML = `
+        <h3>${parameter} Calibration</h3>
+        <p>${calibrationWorkflows[parameter][0].instruction}</p>
+      `;
+      
+      document.getElementById('next-step-btn').disabled = false;
+      document.getElementById('next-step-btn').textContent = 'Start Step';
+      document.getElementById('timer-display').style.display = 'none';
+      document.getElementById('progress-container').style.display = 'none';
+    }
+    
+    function nextCalibrationStep() {
+      const parameter = currentCalibration.parameter;
+      const step = currentCalibration.step;
+      const workflow = calibrationWorkflows[parameter];
+      
+      // If we're at the last step, complete calibration
+      if (step >= workflow.length - 1) {
+        completeCalibration();
+        return;
+      }
+      
+      // Start timer for current step
+      const duration = workflow[step].duration;
+      if (duration > 0) {
+        startTimer(duration);
+      }
+      
+      // Update UI for next step
+      currentCalibration.step++;
+      document.getElementById('calibration-steps').innerHTML = `
+        <h3>Step ${currentCalibration.step + 1} of ${workflow.length}</h3>
+        <p>${workflow[currentCalibration.step].instruction}</p>
+      `;
+      
+      if (currentCalibration.step >= workflow.length - 1) {
+        document.getElementById('next-step-btn').textContent = 'Complete Calibration';
+      } else {
+        document.getElementById('next-step-btn').textContent = 'Next Step';
+      }
+    }
+    
+    function startTimer(seconds) {
+      // Clear any existing timer
+      if (currentCalibration.timer) {
+        clearInterval(currentCalibration.timer);
+      }
+      
+      currentCalibration.maxTime = seconds;
+      let remaining = seconds;
+      
+      // Show timer UI
+      document.getElementById('timer-display').style.display = 'block';
+      document.getElementById('progress-container').style.display = 'block';
+      
+      // Update timer every second
+      currentCalibration.timer = setInterval(() => {
+        remaining--;
+        document.getElementById('time-remaining').textContent = remaining;
+        const percent = ((currentCalibration.maxTime - remaining) / currentCalibration.maxTime) * 100;
+        document.getElementById('progress-bar').style.width = `${percent}%`;
+        
+        if (remaining <= 0) {
+          clearInterval(currentCalibration.timer);
+          document.getElementById('next-step-btn').disabled = false;
+        }
+      }, 1000);
+      
+      document.getElementById('next-step-btn').disabled = true;
+    }
+    
+    function completeCalibration() {
+      const parameter = currentCalibration.parameter;
+      const now = new Date();
+      
+      // Update status display
+      document.getElementById(`${parameter.toLowerCase()}-calibration-date`).textContent = now.toLocaleString();
+      document.getElementById(`${parameter.toLowerCase()}-status`).textContent = 'Calibrated';
+      document.getElementById(`${parameter.toLowerCase()}-status`).style.color = 'var(--success)';
+      
+      // Reset calibration UI
+      document.getElementById('calibration-steps').innerHTML = `
+        <h3>${parameter} Calibration Complete!</h3>
+        <p>Calibration performed at ${now.toLocaleTimeString()}</p>
+      `;
+      document.getElementById('next-step-btn').disabled = true;
+      document.getElementById('timer-display').style.display = 'none';
+      document.getElementById('progress-container').style.display = 'none';
+      
+      alert(`${parameter} calibration completed successfully!`);
+    }
+    
+    // Measurement functions
+    function logMeasurement() {
+      const parameter = document.getElementById('measurement-parameter').value;
+      const value = parseFloat(document.getElementById('measurement-value').value);
+      const notes = document.getElementById('measurement-notes').value;
+      
+      if (isNaN(value)) {
+        alert('Please enter a valid measurement value');
+        return;
+      }
+      
+      const measurement = {
+        id: Date.now(),
+        timestamp: new Date(),
+        parameter,
+        value,
+        notes,
+        unit: getUnitForParameter(parameter)
+      };
+      
+      measurements.push(measurement);
+      
+      // Clear form
+      document.getElementById('measurement-value').value = '';
+      document.getElementById('measurement-notes').value = '';
+      
+      // Update UI
+      updateMeasurementChart();
+      renderMeasurementLog();
+      
+      // Auto-switch to data tab if not already there
+      if (!document.getElementById('data').classList.contains('active')) {
+        openTab('data');
+      }
+    }
+    
+    function getUnitForParameter(parameter) {
+      const units = {
+        pH: 'pH',
+        DO: 'mg/L',
+        conductivity: 'µS/cm',
+        temperature: '°C'
+      };
+      return units[parameter] || '';
+    }
+    
+    function updateMeasurementChart() {
+      const ctx = document.getElementById('measurement-chart').getContext('2d');
+      
+      // Filter measurements for the selected parameter
+      const selectedParam = document.getElementById('measurement-parameter').value;
+      const filtered = selectedParam === 'all' 
+        ? measurements 
+        : measurements.filter(m => m.parameter === selectedParam);
+      
+      // Group by parameter for charting
+      const datasets = [];
+      const params = [...new Set(filtered.map(m => m.parameter))];
+      
+      params.forEach(param => {
+        const paramMeasurements = filtered.filter(m => m.parameter === param);
+        datasets.push({
+          label: param,
+          data: paramMeasurements.map(m => m.value),
+          borderColor: getColorForParameter(param),
+          backgroundColor: 'rgba(0,0,0,0.1)',
+          tension: 0.1
+        });
+      });
+      
+      // Destroy existing chart if it exists
+      if (window.measurementChart) {
+        window.measurementChart.destroy();
+      }
+      
+      // Create new chart
+      window.measurementChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: filtered.map(m => m.timestamp.toLocaleTimeString()),
+          datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: false
+            }
+          }
+        }
+      });
+    }
+    
+    function getColorForParameter(parameter) {
+      const colors = {
+        pH: '#4bc0c0',
+        DO: '#ff6384',
+        conductivity: '#36a2eb',
+        temperature: '#ff9f40'
+      };
+      return colors[parameter] || '#9966ff';
+    }
+    
+    // Data log functions
+    function renderMeasurementLog() {
+      const container = document.getElementById('measurement-log');
+      const filter = document.getElementById('data-filter').value;
+      
+      const filtered = filter === 'all' 
+        ? measurements 
+        : measurements.filter(m => m.parameter === filter);
+      
+      if (filtered.length === 0) {
+        container.innerHTML = '<p>No measurements recorded yet</p>';
+        return;
+      }
+      
+      container.innerHTML = filtered.map(m => `
+        <div class="reading-card">
+          <h3>${m.parameter}: ${m.value} ${m.unit}</h3>
+          <p>${m.timestamp.toLocaleString()}</p>
+          ${m.notes ? `<p>Notes: ${m.notes}</p>` : ''}
+          <button onclick="deleteMeasurement(${m.id})" style="background-color: var(--danger); margin-top: 5px;">Delete</button>
+        </div>
+      `).join('');
+    }
+    
+    function filterMeasurements() {
+      renderMeasurementLog();
+    }
+    
+    function deleteMeasurement(id) {
+      if (confirm('Are you sure you want to delete this measurement?')) {
+        measurements = measurements.filter(m => m.id !== id);
+        renderMeasurementLog();
+        updateMeasurementChart();
+      }
+    }
+    
+    function exportData() {
+      if (measurements.length === 0) {
+        alert('No measurements to export');
+        return;
+      }
+      
+      const filter = document.getElementById('data-filter').value;
+      const filtered = filter === 'all' 
+        ? measurements 
+        : measurements.filter(m => m.parameter === filter);
+      
+      // Convert to CSV
+      const headers = ['Timestamp', 'Parameter', 'Value', 'Unit', 'Notes'];
+      const rows = filtered.map(m => [
+        m.timestamp.toISOString(),
+        m.parameter,
+        m.value,
+        m.unit,
+        m.notes || ''
+      ]);
+      
+      let csv = headers.join(',') + '\n';
+      rows.forEach(row => {
+        csv += row.map(field => `"${field.toString().replace(/"/g, '""')}"`).join(',') + '\n';
+      });
+      
+      // Create download link
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `horiba_measurements_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      updateCalibrationSteps();
+      renderMeasurementLog();
+    });
+  </script>
+</body>
+</html>
